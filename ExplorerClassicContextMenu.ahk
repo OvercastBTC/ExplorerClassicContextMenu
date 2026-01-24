@@ -18,7 +18,7 @@ with optional notifications for feedback on the process.
 #SingleInstance Force
 
 ;! To run this automatically un-comment the line below:
-; ExplorerClassicContextMenu()
+ExplorerClassicContextMenu()
 
 #HotIf WinActive(A_ScriptName) || WinActive('ahk_exe Code.exe')
 
