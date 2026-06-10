@@ -1,8 +1,8 @@
 ﻿/************************************************************************
- * @description Retstore the Windows Explorer Context Menu to the Windows 10 Classic version
+ * @description Restore the Windows Explorer Context Menu to the Windows 10 Classic version
  * @author OvercastBTC
  * @date 2024/10/23
- * @version 1.0.0
+ * @version 1.1.0
  ***********************************************************************/
 /*
 Note: This class is particularly useful for Windows 11 users who prefer the 
@@ -97,41 +97,50 @@ Class ExplorerClassicContextMenu {
 
 	/*
 		Method: RestoreClassicMenu
-		Main method that handles the entire process of enabling classic context menu
+		Main method that handles the entire process of enabling classic context menu.
 		Steps:
 		1. Initialize Explorer window groups
 		2. Check current menu state
-		3. Create registry key if needed
-		4. Restart Explorer to apply changes
+		3. Prompt user with status and Run / Cancel options
+		4. Create registry key if needed
+		5. Restart Explorer to apply changes
 	*/
 
 	RestoreClassicMenu() {
 
 		this.InitializeExplorerGroups()
 
-		; Skip if already enabled
-		if (this.CheckContextMenuState()) {
-			(this.notify) ? this.trayNotify('No Action Needed' '`n' 'Classic Explorer Context Menu (Windows 10 style) is already enabled.',, 'T1') : 0
+		isEnabled := this.CheckContextMenuState()
+
+		if (isEnabled) {
+			statusMsg := "Status: ENABLED`n`nThe classic (Windows 10 style) Explorer context menu is already active.`n`nDo you want to re-apply it anyway?"
+			result := MsgBox(statusMsg, "Classic Context Menu — Already Enabled", "YesNo Icon? 4096")
+		} else {
+			statusMsg := "Status: NOT ENABLED`n`nThe modern (Windows 11 style) Explorer context menu is currently active.`n`nDo you want to restore the classic (Windows 10 style) context menu?"
+			result := MsgBox(statusMsg, "Classic Context Menu — Not Enabled", "YesNo Icon! 4096")
+		}
+
+		if (result = "No") {
 			return
 		}
 
-		; Create registry key to enable classic menu
+		; Create / overwrite registry key to enable classic menu
 		try {
 			RegCreateKey("HKEY_CURRENT_USER\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32")
 			RegWrite("", "REG_SZ", "HKEY_CURRENT_USER\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32")
-			(this.notify) ? this.trayNotify("Success!!!'`nClassic Explorer Context Menu has been enabled.`nRestarting Explorer to apply changes...",, "T1") : 0
+			(this.notify) ? this.trayNotify("Success!`nClassic Explorer Context Menu has been enabled.`nRestarting Explorer to apply changes...",, "T1") : 0
 		} catch as err {
-			(this.notify) ? this.trayNotify("Error:`nFailed to enable Classic Context Menu: " err.Message, "T5") : 0
+			MsgBox("Error: Failed to write registry key.`n`n" err.Message, "Classic Context Menu — Error", "OK Icon! 4096")
 			return
 		}
 
 		; Restart Explorer to apply changes
 		try {
-			GroupClose("ExplorerGroup")          ; Close all Explorer windows
-			Sleep(500)                           ; Allow windows to close
+			GroupClose("ExplorerGroup")                        ; Close all Explorer windows
+			Sleep(500)                                         ; Allow windows to close
 			Run("taskkill.exe /f /im explorer.exe",, "Hide")  ; Force kill Explorer
-			Sleep(1000)                          ; Ensure process is terminated
-			Run("explorer.exe")                  ; Start new Explorer process
+			Sleep(1000)                                        ; Ensure process is terminated
+			Run("explorer.exe")                                ; Start new Explorer process
 		} catch as err {
 			(this.notify) ? this.trayNotify("Failed to restart Explorer: " err.Message, "Error", "T5") : 0
 		}
